@@ -14,6 +14,8 @@ const secondRowInput = document.querySelector("#second-row");
 const fileSummary = document.querySelector("#file-summary");
 const generateButton = document.querySelector("#generate");
 const statusBox = document.querySelector("#status");
+const downloadFallback = document.querySelector("#download-fallback");
+let currentDownloadUrl = "";
 
 photosInput.addEventListener("change", () => {
   const count = photosInput.files.length;
@@ -364,14 +366,13 @@ async function replaceTemplate(files, secondRowText, onProgress = () => {}) {
 }
 
 function download(blob, filename) {
+  if (currentDownloadUrl) URL.revokeObjectURL(currentDownloadUrl);
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  currentDownloadUrl = url;
+  downloadFallback.href = url;
+  downloadFallback.download = filename;
+  downloadFallback.hidden = false;
+  downloadFallback.click();
 }
 
 generateButton.addEventListener("click", async () => {
@@ -380,13 +381,14 @@ generateButton.addEventListener("click", async () => {
     return;
   }
   generateButton.disabled = true;
+  downloadFallback.hidden = true;
   setStatus("正在读取时间、匹配分组并生成 Excel……");
   try {
     const result = await replaceTemplate(photosInput.files, secondRowInput.value, message => setStatus(message));
     const date = new Date();
     download(result.blob, `海滨大道施工日志${date.getMonth() + 1}.${date.getDate()}_已生成.xlsx`);
     const ignoredText = result.ignoredCount ? `，另有 ${result.ignoredCount} 张未使用` : "";
-    setStatus(`生成完成，已使用 ${result.usedCount} 张照片${ignoredText}，Excel 已开始下载。`, "success");
+    setStatus(`生成完成，已使用 ${result.usedCount} 张照片${ignoredText}，Excel 已开始下载；如未自动下载，请点击下方链接。`, "success");
   } catch (error) {
     console.error(error);
     setStatus(`生成失败：${error.message || error}`, "error");

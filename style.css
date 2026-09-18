@@ -41,6 +41,8 @@ code { padding: 2px 5px; border-radius: 5px; color: var(--brand-dark); backgroun
 .status { min-height: 22px; margin-top: 13px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .status.error { color: #b42318; }
 .status.success { color: var(--brand-dark); }
+.download-fallback { display: block; margin-top: 9px; color: var(--brand-dark); font-size: 13px; font-weight: 700; text-align: center; }
+.download-fallback[hidden] { display: none; }
 .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 14px; }
 .info-grid div { padding: 13px 9px; border: 1px solid rgba(217,229,226,.95); border-radius: 15px; background: rgba(255,255,255,.62); text-align: center; }
 .info-grid b, .info-grid span { display: block; }
