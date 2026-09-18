@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <title>海滨大道施工日志</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div class="eyebrow">施工日志 · 手机版</div>
+      <h1>海滨大道施工日志</h1>
+      <p>只选择照片，模板、日期、分组和图片位置自动处理。</p>
+    </section>
+
+    <section class="card">
+      <label class="field-label" for="photos">施工照片</label>
+      <label class="upload-box" for="photos">
+        <span class="upload-icon">＋</span>
+        <span><strong>选择照片</strong><small>可一次选择多张，图片只在本机处理</small></span>
+      </label>
+      <input id="photos" type="file" accept="image/*" multiple>
+      <div id="file-summary" class="file-summary">还没有选择照片</div>
+
+      <label class="field-label" for="second-row">第二行内容（可选）</label>
+      <input id="second-row" class="text-input" type="text" placeholder="留空自动更新日期；可写 {{日期}}">
+      <p class="hint">例如：<code>{{日期}}</code>｜现场施工记录</p>
+
+      <button id="generate" class="primary-button" type="button">一键生成施工日志</button>
+      <div id="status" class="status" role="status">模板已内置，准备就绪。</div>
+    </section>
+
+    <section class="info-grid">
+      <div><b>上午</b><span>05:00–09:59</span></div>
+      <div><b>中午</b><span>10:00–14:59</span></div>
+      <div><b>下午</b><span>15:00以后</span></div>
+    </section>
+
+    <p class="privacy">照片不会上传服务器，网页会在当前手机浏览器内完成处理。</p>
+  </main>
+
+  <script src="vendor/jszip-3.10.1.min.js"></script>
+  <script src="vendor/exifr-7.1.3-lite.umd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
