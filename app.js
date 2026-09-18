@@ -121,10 +121,10 @@ function nextRelationshipId(relationshipsDocument) {
 
 function nextMediaName(zip) {
   const names = Object.keys(zip.files).map(name => {
-    const match = name.match(/^xl\/media\/image(\d+)\.png$/);
+    const match = name.match(/^xl\/media\/image(\d+)\.(?:png|jpe?g)$/i);
     return match ? Number(match[1]) : 0;
   });
-  return `xl/media/image${Math.max(0, ...names) + 1}.png`;
+  return `xl/media/image${Math.max(0, ...names) + 1}.jpg`;
 }
 
 function formulaText(cell) {
@@ -221,7 +221,7 @@ function centerCrop(sourceWidth, sourceHeight) {
   return { sourceX, sourceY, cropWidth, cropHeight };
 }
 
-async function imageAsPng(file) {
+async function imageAsJpeg(file) {
   const drawable = await loadDrawableImage(file);
   const canvas = document.createElement("canvas");
   canvas.width = OUTPUT_IMAGE_WIDTH;
@@ -246,7 +246,7 @@ async function imageAsPng(file) {
     OUTPUT_IMAGE_HEIGHT,
   );
   drawable.release();
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.88));
   if (!blob) throw new Error(`无法读取图片：${file.name}`);
   return new Uint8Array(await blob.arrayBuffer());
 }
@@ -338,7 +338,7 @@ async function replaceTemplate(files, secondRowText, onProgress = () => {}) {
       const target = relationTargets.get(relationByImageId.get(imageId));
       const mediaName = target.startsWith("xl/") ? target : `xl/${target.replace(/^\//, "")}`;
       onProgress(`正在处理照片 ${processedCount + 1}/${usedCount}……`);
-      zip.file(mediaName, await imageAsPng(item.file), { compression: "STORE" });
+      zip.file(mediaName, await imageAsJpeg(item.file), { compression: "STORE" });
       processedCount += 1;
     }
   }
