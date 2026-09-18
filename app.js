@@ -251,10 +251,13 @@ async function imageAsPng(file) {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-async function replaceTemplate(files, secondRowText) {
+async function replaceTemplate(files, secondRowText, onProgress = () => {}) {
+  onProgress("正在下载内置模板……");
   const templateResponse = await fetch("template.xlsx");
   if (!templateResponse.ok) throw new Error("网页没有找到 template.xlsx，请确认它和网页在同一目录。");
-  const zip = await JSZip.loadAsync(await templateResponse.arrayBuffer());
+  const templateBuffer = await templateResponse.arrayBuffer();
+  onProgress("正在读取模板……");
+  const zip = await JSZip.loadAsync(templateBuffer);
   const sheetDocument = parseXml(await zip.file("xl/worksheets/sheet1.xml").async("text"));
   const cellImagesDocument = parseXml(await zip.file("xl/cellimages.xml").async("text"));
   const relationshipsDocument = parseXml(await zip.file("xl/_rels/cellimages.xml.rels").async("text"));
@@ -273,6 +276,7 @@ async function replaceTemplate(files, secondRowText) {
     .filter(cell => formulaText(cell).includes("DISPIMG"))
     .map(cell => [cell.getAttribute("r"), cell]));
 
+  onProgress("正在识别照片时间并分组……");
   const allImages = await collectImages(files);
   const byGroup = Object.fromEntries(["上午", "中午", "下午", "未分类"].map(label => [label, allImages.filter(item => item.group === label)]));
   const selected = { 上午: [], 中午: [], 下午: [] };
@@ -320,6 +324,8 @@ async function replaceTemplate(files, secondRowText) {
     }
   }
 
+  const usedCount = GROUP_ORDER.reduce((total, label) => total + selected[label].length, 0);
+  let processedCount = 0;
   for (const label of GROUP_ORDER) {
     const coordinates = targetCoordinates(anchors[label], selected[label].length, 2);
     for (let index = 0; index < coordinates.length; index += 1) {
@@ -331,7 +337,9 @@ async function replaceTemplate(files, secondRowText) {
       cell.getElementsByTagNameNS(MAIN_NS, "v")[0].textContent = `=DISPIMG("${imageId}",1)`;
       const target = relationTargets.get(relationByImageId.get(imageId));
       const mediaName = target.startsWith("xl/") ? target : `xl/${target.replace(/^\//, "")}`;
-      zip.file(mediaName, await imageAsPng(item.file));
+      onProgress(`正在处理照片 ${processedCount + 1}/${usedCount}……`);
+      zip.file(mediaName, await imageAsPng(item.file), { compression: "STORE" });
+      processedCount += 1;
     }
   }
 
@@ -345,8 +353,13 @@ async function replaceTemplate(files, secondRowText) {
   zip.file("xl/cellimages.xml", serializeXml(cellImagesDocument));
   zip.file("xl/_rels/cellimages.xml.rels", serializeXml(relationshipsDocument));
   zip.file("xl/sharedStrings.xml", serializeXml(stringsDocument));
-  const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
-  const usedCount = GROUP_ORDER.reduce((total, label) => total + selected[label].length, 0);
+  onProgress("正在打包 Excel……");
+  const blob = await zip.generateAsync({
+    type: "blob",
+    compression: "DEFLATE",
+    compressionOptions: { level: 1 },
+    streamFiles: true,
+  });
   return { blob, usedCount, ignoredCount: Math.max(0, allImages.length - usedCount) };
 }
 
@@ -369,7 +382,7 @@ generateButton.addEventListener("click", async () => {
   generateButton.disabled = true;
   setStatus("正在读取时间、匹配分组并生成 Excel……");
   try {
-    const result = await replaceTemplate(photosInput.files, secondRowInput.value);
+    const result = await replaceTemplate(photosInput.files, secondRowInput.value, message => setStatus(message));
     const date = new Date();
     download(result.blob, `海滨大道施工日志${date.getMonth() + 1}.${date.getDate()}_已生成.xlsx`);
     const ignoredText = result.ignoredCount ? `，另有 ${result.ignoredCount} 张未使用` : "";
